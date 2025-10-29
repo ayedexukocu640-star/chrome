@@ -395,7 +395,7 @@ def main():
     print("\nOptimized for: chrome-extension://lgmpcpglpngdoalbgeoldeajfclnhafa")
     print()
     
-    automation = SafePalAdvancedAutomation()
+    automation = SafePalFinalAutomation()
     
     try:
         # Setup
