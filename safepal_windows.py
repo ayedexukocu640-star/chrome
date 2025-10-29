@@ -27,6 +27,9 @@ LOG_FILE = "safepal_windows.log"
 WAIT_TIMEOUT = 20
 BALANCE_WAIT = 10
 
+# SafePal wallet password (for encryption)
+WALLET_PASSWORD = "Apple2020"
+
 # Setup logging with UTF-8 encoding for Windows
 logging.basicConfig(
     level=logging.INFO,
@@ -73,6 +76,52 @@ class SafePalWindowsAutomation:
         except:
             return None
     
+    def enter_password(self, password):
+        """Enter password if prompted by SafePal"""
+        try:
+            logger.info("Checking for password prompt...")
+            time.sleep(2)
+            
+            # Look for password input fields
+            password_fields = self.driver.find_elements(By.XPATH, "//input[@type='password']")
+            
+            if password_fields:
+                logger.info(f"  Found {len(password_fields)} password fields")
+                
+                # Enter password in all password fields (usually 2: password + confirm)
+                for idx, field in enumerate(password_fields[:2]):
+                    field.click()
+                    time.sleep(0.1)
+                    field.clear()
+                    time.sleep(0.1)
+                    field.send_keys(password)
+                    logger.info(f"  [OK] Entered password in field {idx+1}")
+                    time.sleep(0.2)
+                
+                self.screenshot("password_entered")
+                
+                # Look for submit/confirm button
+                for btn_text in ['Confirm', 'Continue', 'Next', 'Submit', 'OK']:
+                    try:
+                        button = self.driver.find_element(By.XPATH, 
+                            f"//button[contains(text(), '{btn_text}')]")
+                        button.click()
+                        logger.info(f"  [OK] Clicked '{btn_text}' button")
+                        time.sleep(2)
+                        return True
+                    except:
+                        continue
+                
+                logger.warning("  [WARNING] No submit button found after password")
+                return True
+            else:
+                logger.info("  No password prompt found")
+                return True
+                
+        except Exception as e:
+            logger.warning(f"  Password entry error: {e}")
+            return True  # Continue anyway
+    
     def navigate_to_import(self):
         """Navigate directly to import mnemonics page"""
         try:
@@ -86,6 +135,10 @@ class SafePalWindowsAutomation:
                 return False
             
             logger.info("[OK] SafePal extension accessible")
+            
+            # Check if password is needed before import
+            self.enter_password(WALLET_PASSWORD)
+            
             return True
         except Exception as e:
             logger.error(f"[ERROR] Navigation failed: {e}")
@@ -199,6 +252,10 @@ class SafePalWindowsAutomation:
             
             time.sleep(4)
             self.screenshot("03_after_submit")
+            
+            # Check if password is needed after seed entry
+            self.enter_password(WALLET_PASSWORD)
+            time.sleep(2)
             
             # Handle wallet name if prompted
             try:
