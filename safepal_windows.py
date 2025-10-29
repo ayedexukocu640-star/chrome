@@ -122,9 +122,17 @@ class SafePalWindowsAutomation:
                 logger.info(f"  Method: Individual inputs")
                 for idx, word in enumerate(words):
                     try:
+                        # Click to focus, then type the word
+                        inputs[idx].click()
+                        time.sleep(0.1)
                         inputs[idx].clear()
-                        inputs[idx].send_keys(word)
-                        time.sleep(0.2)
+                        time.sleep(0.1)
+                        # Type each character with small delay for more natural input
+                        for char in word:
+                            inputs[idx].send_keys(char)
+                            time.sleep(0.02)
+                        time.sleep(0.1)
+                        logger.debug(f"    Word {idx+1}: {word}")
                     except Exception as e:
                         logger.warning(f"  Word {idx+1} error: {e}")
                 success = True
