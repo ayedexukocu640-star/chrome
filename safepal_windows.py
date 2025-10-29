@@ -186,10 +186,6 @@ class SafePalWindowsAutomation:
                 return False
             
             logger.info("[OK] SafePal extension accessible")
-            
-            # Check if password is needed before import
-            self.enter_password(WALLET_PASSWORD)
-            
             return True
         except Exception as e:
             logger.error(f"[ERROR] Navigation failed: {e}")
@@ -303,10 +299,6 @@ class SafePalWindowsAutomation:
             
             time.sleep(4)
             self.screenshot("03_after_submit")
-            
-            # Check if password is needed after seed entry
-            self.enter_password(WALLET_PASSWORD)
-            time.sleep(2)
             
             # Handle wallet name if prompted
             try:
