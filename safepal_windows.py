@@ -105,11 +105,15 @@ class SafePalWindowsAutomation:
             words = seed_phrase.split()
             logger.info(f"  Words: {len(words)}")
             
-            # Find all input fields
-            inputs = self.driver.find_elements(By.XPATH, "//input[@type='text']")
+            # Find all input fields - SafePal uses password-type inputs!
+            text_inputs = self.driver.find_elements(By.XPATH, "//input[@type='text']")
+            password_inputs = self.driver.find_elements(By.XPATH, "//input[@type='password']")
             textareas = self.driver.find_elements(By.XPATH, "//textarea")
             
-            logger.info(f"  Found {len(inputs)} inputs, {len(textareas)} textareas")
+            # Combine all inputs
+            inputs = text_inputs + password_inputs
+            
+            logger.info(f"  Found {len(text_inputs)} text inputs, {len(password_inputs)} password inputs, {len(textareas)} textareas")
             
             success = False
             
@@ -134,14 +138,15 @@ class SafePalWindowsAutomation:
                 success = True
                 logger.info(f"  [OK] Entered full phrase")
             
-            # Method 3: Try any visible input
+            # Method 3: Try finding any input (last resort)
             else:
                 all_inputs = self.driver.find_elements(By.TAG_NAME, "input")
                 if all_inputs:
-                    logger.info(f"  Method: First available input")
+                    logger.warning(f"  Method: Fallback - found {len(all_inputs)} total inputs")
+                    logger.warning(f"  This may not work correctly!")
                     all_inputs[0].send_keys(seed_phrase)
                     success = True
-                    logger.info(f"  [OK] Entered phrase")
+                    logger.info(f"  [OK] Entered phrase in first input")
             
             if not success:
                 logger.error("  [ERROR] No suitable input found")
