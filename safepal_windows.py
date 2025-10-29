@@ -19,6 +19,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Configuration
 EXTENSION_ID = "lgmpcpglpngdoalbgeoldeajfclnhafa"
+PASSWORD_SETUP_URL = f"chrome-extension://{EXTENSION_ID}/index.html#/password?redirect=/import-wallet"
 IMPORT_URL = f"chrome-extension://{EXTENSION_ID}/index.html#/import/mnemonics"
 MAIN_URL = f"chrome-extension://{EXTENSION_ID}/index.html"
 VALID_SEEDS_FILE = "valid.txt"
@@ -64,6 +65,56 @@ class SafePalWindowsAutomation:
         except Exception as e:
             logger.error(f"[ERROR] Failed to initialize Chrome: {e}")
             return False
+    
+    def setup_password_first_time(self):
+        """Setup SafePal password on first run"""
+        try:
+            logger.info("Setting up SafePal password...")
+            logger.info(f"Navigating to: {PASSWORD_SETUP_URL}")
+            self.driver.get(PASSWORD_SETUP_URL)
+            time.sleep(3)
+            
+            self.screenshot("00_password_setup")
+            
+            # Look for password input fields
+            password_fields = self.driver.find_elements(By.XPATH, "//input[@type='password']")
+            
+            if len(password_fields) >= 2:
+                logger.info(f"  Found {len(password_fields)} password fields")
+                
+                # Enter password (usually 2 fields: password + confirm)
+                for idx, field in enumerate(password_fields[:2]):
+                    field.click()
+                    time.sleep(0.1)
+                    field.clear()
+                    time.sleep(0.1)
+                    field.send_keys(WALLET_PASSWORD)
+                    logger.info(f"  [OK] Entered password in field {idx+1}")
+                    time.sleep(0.2)
+                
+                self.screenshot("00_password_entered")
+                
+                # Click confirm/continue button
+                for btn_text in ['Confirm', 'Continue', 'Next', 'Create', 'Submit']:
+                    try:
+                        button = self.driver.find_element(By.XPATH, 
+                            f"//button[contains(text(), '{btn_text}')]")
+                        button.click()
+                        logger.info(f"  [OK] Clicked '{btn_text}' button")
+                        time.sleep(3)
+                        return True
+                    except:
+                        continue
+                
+                logger.info("  [OK] Password setup completed")
+                return True
+            else:
+                logger.info("  No password setup needed (already configured)")
+                return True
+                
+        except Exception as e:
+            logger.warning(f"  Password setup error: {e}")
+            return True  # Continue anyway
     
     def screenshot(self, name):
         """Take screenshot"""
@@ -391,8 +442,19 @@ class SafePalWindowsAutomation:
         
         logger.info(f"Found {len(seeds)} seed phrases to process")
         
+        # Setup password FIRST (only needed once)
+        logger.info("\n" + "="*70)
+        logger.info("STEP 1: Setting up SafePal password")
+        logger.info("="*70)
+        self.setup_password_first_time()
+        time.sleep(2)
+        
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("")
+        
+        logger.info("\n" + "="*70)
+        logger.info("STEP 2: Processing seeds")
+        logger.info("="*70)
         
         for idx, seed in enumerate(seeds, 1):
             logger.info(f"\n{'='*70}")
